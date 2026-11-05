@@ -14,5 +14,6 @@ OCR_MIN_TEXT_CHARS = int(os.getenv('OCR_MIN_TEXT_CHARS', '35'))
 OCR_LANG = os.getenv('OCR_LANG', 'ind+eng')
 UPLOAD_TTL = int(os.getenv('SIGNED_UPLOAD_TTL_SECONDS', '900'))
 DOWNLOAD_TTL = int(os.getenv('SIGNED_DOWNLOAD_TTL_SECONDS', '300'))
-if os.getenv('APP_ENV') == 'production' and STORAGE_MODE != 'r2':
-    raise RuntimeError('Production requires persistent private R2 storage.')
+ALLOW_EPHEMERAL_STORAGE = os.getenv('ALLOW_EPHEMERAL_STORAGE', 'false').lower() == 'true'
+if os.getenv('APP_ENV') == 'production' and STORAGE_MODE != 'r2' and not ALLOW_EPHEMERAL_STORAGE:
+    raise RuntimeError('Production requires R2 or explicit ALLOW_EPHEMERAL_STORAGE=true for temporary storage.')

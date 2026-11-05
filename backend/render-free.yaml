@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: temanpora-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: STORAGE_MODE
+        value: local
+      - key: ALLOW_EPHEMERAL_STORAGE
+        value: "true"
+      - key: DATA_DIR
+        value: /tmp/temanpora-data
+      - key: FRONTEND_URL
+        sync: false

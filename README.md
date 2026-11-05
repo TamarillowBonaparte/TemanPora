@@ -58,6 +58,15 @@ Pengujian backend menggunakan dokumen sintetik dengan PyMuPDF dan penyimpanan se
 
 ## Deployment Vercel / Render / R2
 
+Untuk Render Free tanpa R2, gunakan `backend/render-free.yaml`, atau isi
+`APP_ENV=production`, `STORAGE_MODE=local`, `ALLOW_EPHEMERAL_STORAGE=true`,
+`DATA_DIR=/tmp/temanpora-data`, dan `FRONTEND_URL` sesuai alamat frontend.
+Tidak membutuhkan layanan cron berbayar. File hanya bertahan selama instance
+yang sama berjalan; tidur, restart, atau deploy ulang menghilangkan pekerjaan.
+Tab browser yang masih terbuka tidak menjamin instance tetap berjalan.
+Unduh hasil segera. Batas retensi tetap berlaku dan pengguna dapat menghapus
+pekerjaannya lewat aplikasi. Untuk penyimpanan persisten gunakan R2 di bawah.
+
 - Vercel: root `frontend`, isi `NEXT_PUBLIC_API_URL` dengan origin backend, lalu build Next.js biasa.
 - Render: gunakan `backend/render.yaml` sebagai blueprint dengan root `backend` (atau sesuaikan Dockerfile path ke monorepo). Isi domain frontend dan seluruh variabel R2. Backend sengaja menggunakan satu worker agar penguncian proses efektif.
 - R2: bucket privat, kredensial dengan akses minimum, endpoint `https://<account-id>.r2.cloudflarestorage.com`. Atur `STORAGE_MODE=r2` dan `APP_ENV=production`; mode production menolak storage lokal.
