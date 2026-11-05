@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "Teman Pora — SIPORA Assistant",
+  "version": "2.1.2",
+  "minimum_chrome_version": "116",
+  "description": "Asisten review metadata dan bantuan deposit SIPORA oleh Teman Pora.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://sipora.polije.ac.id/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Teman Pora — SIPORA Assistant",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1/*",
+        "http://localhost/*"
+      ],
+      "js": [
+        "config.js",
+        "website-bridge.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://sipora.polije.ac.id/*"
+      ],
+      "js": [
+        "config.js",
+        "modules/sipora-detector.js",
+        "modules/metadata-filler.js",
+        "modules/upload-manager.js",
+        "modules/division-selector.js",
+        "modules/deposit-manager.js",
+        "modules/automation-v212.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

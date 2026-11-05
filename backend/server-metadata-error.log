@@ -1,0 +1,48 @@
+INFO:     Will watch for changes in these directories: ['D:\\A Baru\\Projek Coba Sipora\\backend']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [27064] using WatchFiles
+INFO:     Started server process [31032]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app\metadata.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31032]
+WARNING:  WatchFiles detected changes in 'tests\test_metadata_extension.py'. Reloading...
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "C:\Users\ASUS\AppData\Local\Programs\Python\Python311\Lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\ASUS\AppData\Local\Programs\Python\Python311\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\A Baru\Projek Coba Sipora\backend\.venv\Lib\site-packages\uvicorn\_subprocess.py", line 76, in subprocess_started
+    config.configure_logging()
+  File "D:\A Baru\Projek Coba Sipora\backend\.venv\Lib\site-packages\uvicorn\config.py", line 398, in configure_logging
+    logging.config.dictConfig(self.log_config)
+  File "C:\Users\ASUS\AppData\Local\Programs\Python\Python311\Lib\logging\config.py", line 823, in dictConfig
+    dictConfigClass(config).configure()
+  File "C:\Users\ASUS\AppData\Local\Programs\Python\Python311\Lib\logging\config.py", line 507, in configure
+    if config['version'] != 1:
+       ~~~~~~^^^^^^^^^^^
+  File "C:\Users\ASUS\AppData\Local\Programs\Python\Python311\Lib\logging\config.py", line 337, in __getitem__
+    return self.convert_with_key(key, value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ASUS\AppData\Local\Programs\Python\Python311\Lib\logging\config.py", line 303, in convert_with_key
+    result = self.configurator.convert(value)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ASUS\AppData\Local\Programs\Python\Python311\Lib\logging\config.py", line 453, in convert
+    if not isinstance(value, ConvertingDict) and isinstance(value, dict):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+INFO:     Started server process [29732]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app\main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [29732]
+INFO:     Started server process [24768]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
