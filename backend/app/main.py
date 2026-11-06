@@ -7,10 +7,13 @@ import re
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from typing import Literal
+from pathlib import Path
+import os
 import fitz
 from fastapi import FastAPI, HTTPException, Request, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from . import config as c
 from .storage import storage
@@ -422,3 +425,9 @@ def revoke_extension_session(job=Depends(extension_authorized)):
         job.pop('extension_grant', None)
         job.pop('pairing', None)
         storage.save_job(job)
+
+
+# Register after API routes so the website does not shadow API endpoints.
+frontend_dist = os.getenv('FRONTEND_DIST')
+if frontend_dist:
+    app.mount('/', StaticFiles(directory=Path(frontend_dist), html=True), name='frontend')

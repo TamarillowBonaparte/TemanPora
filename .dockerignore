@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/.next
+**/.next-render
+**/out
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.env
+**/.env.*
+**/*.log
+backend/data
+graphify-out
+ThesisSplit-Extension-v2
+*.zip

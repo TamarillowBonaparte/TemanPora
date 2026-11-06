@@ -21,7 +21,7 @@ import {
   RadioIcon,
 } from '../components/Icons';
 
-const API = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000') + '/api/v1';
+const API = (process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000') + '/api/v1';
 type Section = {start: number|null; end: number|null; verified: boolean; confidence: string; reason: string};
 type Analysis = {total_pages: number; identity:{name:string;nim:string}; sections:Record<string,Section>; warnings:string[];internal_links:number};
 type Job = {job_id:string;access_token:string;document_type:string;expires_at:string;files?:string[];status:string};
@@ -92,7 +92,7 @@ export default function Home(){
     sessionStorage.setItem('temanpora-job',JSON.stringify(j));
     const upload=await api('/jobs/'+j!.job_id+'/upload-url',{method:'POST',body:JSON.stringify({filename:file.name,size:file.size})},j);
     setMessage('Mengunggah PDF…');
-    const local=new URL(upload.url).origin===new URL(API).origin;
+    const local=new URL(upload.url, window.location.origin).origin===new URL(API, window.location.origin).origin;
     const r=await fetch(upload.url,{method:'PUT',headers:{'Content-Type':'application/pdf',...(local?{Authorization:'Bearer '+j!.access_token}:{})},body:file});
     if(!r.ok)throw new Error('Unggah gagal. Periksa koneksi dan coba lagi.');
     setMessage('Membaca struktur dokumen. OCR dapat memerlukan beberapa menit…');

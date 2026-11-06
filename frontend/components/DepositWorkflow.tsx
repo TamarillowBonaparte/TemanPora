@@ -105,7 +105,7 @@ export default function DepositWorkflow({apiUrl,jobId,accessToken,degree}:Props)
       const ready=await extensionRequest('HELLO');
       setStatus(ready);
       const pairing=await api('/pairing',{method:'POST'});
-      const result=await extensionRequest('PAIR',{jobId,code:pairing.code,apiOrigin:new URL(apiUrl).origin,approved:consent});
+      const result=await extensionRequest('PAIR',{jobId,code:pairing.code,apiOrigin:new URL(apiUrl, window.location.origin).origin,approved:consent});
       setStatus(result);
       if(result.state==='extension_ready'&&result.jobId){
         setStatus(await extensionRequest('START_AUTO',{jobId}));

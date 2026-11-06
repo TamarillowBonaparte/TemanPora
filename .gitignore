@@ -1,5 +1,7 @@
 node_modules/
 .next/
+frontend/out/
+frontend/.next-render/
 .venv/
 __pycache__/
 .pytest_cache/
