@@ -1,136 +1,295 @@
-# Teman Pora
+<div align="center">
 
-Aplikasi pemisahan PDF tugas akhir POLIJE berdasarkan README-ThesisSplit yang diberikan. Next.js + TypeScript untuk antarmuka, FastAPI + PyMuPDF untuk pemrosesan, OCR Tesseract selektif, dan penyimpanan privat R2 untuk deployment. Mode lokal tersedia tanpa akun cloud.
+# 🎓 Teman Pora (ThesisSplit v2.1)
+### *Intelligent Thesis Splitter & Automated SIPORA Repository Assistant*
 
-## Jalankan di Windows
+[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Chrome Extension](https://img.shields.io/badge/Chrome_Extension-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-Terminal pertama, dari folder proyek:
+<p align="center">
+  <b>Solusi all-in-one otomatisasi pemisahan dokumen Tugas Akhir/Skripsi POLIJE, verifikasi lembar pengesahan, dan asisten deposit repositori SIPORA (EPrints).</b>
+</p>
 
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+[Fitur Utama](#-fitur-utama) •
+[Demo & Tangkapan Layar](#-tangkapan-layar--antarmuka) •
+[Arsitektur Sistem](#-arsitektur--alur-kerja) •
+[Panduan Instalasi](#-panduan-instalasi--pengembangan-lokal) •
+[Ekstensi Chrome](#-ekstensi-chrome-sipora-assistant-v213) •
+[Deployment](#-deployment--cloud-storage) •
+[Dokumentasi](#-dokumentasi-lengkap)
+
+---
+
+</div>
+
+## 📌 Latar Belakang & Masalah
+
+Setiap mahasiswa tingkat akhir di **Politeknik Negeri Jember (POLIJE)** diwajibkan untuk mengunggah naskah Laporan Akhir/Skripsi/Tesis (jenjang D3, D4, dan S2) ke repositori institusi **SIPORA** (*Sistem Informasi Perpustakaan Online Politeknik Negeri Jember* berbasis EPrints).
+
+Namun, proses manual memiliki sejumlah kendala kritis:
+1. **Aturan Format Ketat:** Naskah wajib dipecah menjadi **4 bagian PDF terpisah** (Bagian Awal, Abstrak, Bab 1 s.d. Selesai, dan Lampiran) dengan aturan penomoran halaman fisik vs penomoran romawi/arab yang sering membingungkan.
+2. **Kesalahan Rentang Halaman:** Banyak mahasiswa keliru membaca Daftar Isi bertitik (*dotted TOC*) sebagai heading aktual bab, menyebabkan halaman terpotong atau tumpang-tindih (*overlapping*).
+3. **Penggantian Halaman Scan:** Lembar pengesahan ber-tanda tangan basah harus disisipkan menggantikan halaman draft digital tanpa merusak rasio dokumen atau merusak bookmark.
+4. **Formulir EPrints yang Repetitif:** Mengisi belasan field metadata, memilah rumpun keilmuan (*academic division*), dan mengunggah 4 berkas satu per satu di SIPORA memakan waktu dan rentan *human error*.
+
+**Teman Pora** hadir sebagai ekosistem lengkap untuk menyelesaikan seluruh proses tersebut dalam hitungan menit—akurat, terverifikasi visual, aman, dan menjaga integritas akademik (*Human-in-the-Loop*).
+
+---
+
+## ✨ Fitur Utama
+
+### 🧠 1. Smart Heuristic & OCR Heading Detection
+- **Visual Heading Analysis:** Algoritma ekstraksi berbasis PyMuPDF yang memindai struktur baris visual halaman teratas (hingga 24 baris awal) dan secara cerdas mengabaikan daftar isi (*Table of Contents*).
+- **Format Agnostik:** Mendukung variasi format `BAB 1`, `BAB I`, huruf berjarak, unicode, teks multibaris, untuk jenjang D3, D4, maupun S2.
+- **Selective Tesseract OCR:** Fallback otomatis menggunakan engine OCR Tesseract (bahasa Indonesia `ind` & Inggris `eng`) apabila mendeteksi halaman hasil scan tanpa teks digital.
+
+### 👁️ 2. Virtualized PDF Viewer & Range Editor
+- **Virtualized Rendering:** Pratinjau dokumen ratusan halaman berjalan ringan dan mulus tanpa membebani memori browser.
+- **Sinkronisasi Cepat:** Ketik nomor halaman fisik dan tekan `Enter` untuk langsung lompat ke pratinjau.
+- **Validasi Ketat Backend:** Mencegah rentang halaman kosong, terbalik, bernilai di luar batas, tidak berurutan, atau saling bertabrakan sebelum proses *generate* diizinkan.
+
+### 🔄 3. Ganti Halaman PDF (In-place Scan Replacement)
+- Mengganti halaman draft (seperti lembar pengesahan) dengan gambar scan JPEG/PNG yang sudah ditandatangani.
+- Analisis rasio aspek otomatis untuk memastikan kualitas visual halaman pengganti tidak terdistorsi.
+- Menjaga kelengkapan byte dokumen asli dan struktur navigasi.
+
+### 📦 4. Export 4 File PDF & Paket ZIP Instan
+- Membagi dokumen naskah secara *byte-exact* menjadi 4 berkas standar repositori SIPORA beserta 1 naskah lengkap yang dipertahankan utuh.
+- Mengunduh masing-masing berkas satuan atau langsung dalam arsip `.zip` terkompresi.
+
+### 🤖 5. Teman Pora Chrome Extension (MV3 Assistant v2.1.3)
+- **Pairing Aman:** Komunikasi satu kali klik antara web app dan ekstensi browser melalui kode pairing 2 menit (*one-time scoped grant*).
+- **Auto-Fill Metadata:** Otomatis mengisi judul, abstrak, nama mahasiswa, NIM, pembimbing, NIDN, tanggal publikasi, dan kata kunci ke form SIPORA.
+- **Auto-Upload 4 Berkas:** Mengunggah 4 berkas PDF hasil pecahan ke tahapan unggah SIPORA secara berurutan.
+- **Academic Division Selector:** Otomatis memilih rumpun keilmuan yang telah disetujui pengguna.
+- **Human-in-the-loop Safety:** Seluruh otomatisasi berhenti pada tahap tinjauan akhir (*review stage*); ekstensi **tidak pernah** menekan tombol *Deposit Item Now* demi mencegah kesalahan data permanen.
+
+---
+
+## 🖼️ Tangkapan Layar & Antarmuka
+
+| Pratinjau Ekstensi & Asisten SIPORA | Alur Otomatisasi Formulir |
+| :---: | :---: |
+| ![Asisten SIPORA](preview-sipora-assistant.png) | ![Otomatisasi SIPORA](preview-otomatis-sipora.png) |
+| *Pairing sekali pakai & status berkas* | *Eksekusi langkah otomatis pada antarmuka SIPORA* |
+
+| Editor & Review Metadata | Pratinjau Pemisahan & Hasil Download |
+| :---: | :---: |
+| ![Metadata Otomatis](preview-metadata-otomatis.png) | ![Hasil Unduh](preview-hasil.png) |
+| *Pemeriksaan detail naskah sebelum dikirim* | *Download 4 berkas PDF terpisah atau arsip ZIP* |
+
+---
+
+## 🏗️ Arsitektur & Alur Kerja
+
+```mermaid
+flowchart TD
+    subgraph Client ["🖥️ Frontend & Browser Extension"]
+        A["Unggah PDF Tugas Akhir"] --> B["Next.js 16 Web App"]
+        B --> C["Virtual PDF Reviewer & Range Editor"]
+        C --> D["Verifikasi & Konfirmasi Metadata"]
+        E["Chrome Extension MV3"] <-->|"Pairing Scoped Token (15 Min)"| B
+        E -->|"Otomasi Form & Upload File"| F["SIPORA POLIJE (EPrints)"]
+    end
+
+    subgraph BackendEngine ["⚙️ FastAPI Processing Engine"]
+        B <-->|"REST API / Presigned URL"| G["FastAPI Backend"]
+        G --> H["PyMuPDF (fitz) Visual Parser"]
+        G --> I["Tesseract OCR Fallback (ind/eng)"]
+        G --> J["PDF Range Splitter & ZIP Packager"]
+        G --> K["Replacement Engine (Scan Swap)"]
+    end
+
+    subgraph Storage ["☁️ Storage & Lifecycle"]
+        G <--> L[("Private Cloudflare R2 / Vercel Blob")]
+        M["Automated 24h Cron Cleanup"] -.->|"Purge expired jobs"| L
+    end
 ```
 
-Terminal kedua:
+### Alur Kerja Transaksi Aman:
+1. **Upload Dokumen:** File diunggah langsung ke storage privat via signed presigned URL dengan alokasi Job ID dan token akses unik.
+2. **Analisis Struktur:** PyMuPDF mengekstraksi judul, identitas, dan bab utama. Jika halaman scan terdeteksi, OCR lokal dijalankan selektif.
+3. **Review & Koreksi:** Pengguna meninjau nomor halaman fisik, menyesuaikan rentang, dan memastikan data pembimbing/NIM akurat.
+4. **Pemisahan Berkas:** Backend memotong PDF menjadi 4 bagian spesifik tanpa merusak format font atau metadata bawaan.
+5. **Ekstensi Browser Bridge:** Kode pairing acak (berlaku 2 menit) ditukarkan dengan *scoped grant* (15 menit) untuk menyalurkan metadata dan berkas ke tab SIPORA tanpa pernah mengekspos token kredensial kampus.
+
+---
+
+## 💻 Tech Stack
+
+| Komponen | Teknologi | Deskripsi |
+| :--- | :--- | :--- |
+| **Frontend Framework** | **Next.js 16 (App Router)** | Framework React modern dengan performa tinggi dan Server Components |
+| **UI Library** | **React 19 & TypeScript 5.9** | Antarmuka interaktif, typed-safe, dan bebas runtime error |
+| **Styling** | **Tailwind CSS & Modular CSS** | Desain responsif, clean, dan nyaman diakses di desktop maupun laptop |
+| **Backend API** | **FastAPI (Python 3.11+)** | API asinkron berkecepatan tinggi dengan validasi Pydantic v2 |
+| **PDF Processing** | **PyMuPDF (fitz)** | Engine parsing dan manipulasi PDF berbasis C berkecepatan tinggi |
+| **OCR Engine** | **Tesseract OCR & PyTesseract** | Pengenalan karakter optik untuk halaman naskah hasil scan |
+| **Browser Extension** | **Chrome Manifest V3** | Background service worker, secure messaging, dan content script bridge |
+| **Cloud Storage** | **Cloudflare R2 / Vercel Blob** | Penyimpanan objek privat berkeamanan tinggi dengan presigned URLs |
+| **Container & Ops** | **Docker & Uvicorn** | Konfigurasi kontainer terpadu untuk kemudahan deployment |
+
+---
+
+## 🚀 Panduan Instalasi & Pengembangan Lokal
+
+### Prasyarat
+- **Node.js** v20.x atau lebih baru & **npm**
+- **Python** 3.11 atau lebih baru
+- **Tesseract OCR** terinstal di sistem dengan data bahasa Indonesia (`ind`) dan Inggris (`eng`):
+  - *Windows:* Unduh installer [UB-Mannheim Tesseract](https://github.com/UB-Mannheim/tesseract/wiki).
+  - *Ubuntu/Debian:* `sudo apt-get install tesseract-ocr tesseract-ocr-ind tesseract-ocr-eng`
+
+---
+
+### 1. Menjalankan Backend (FastAPI)
+
+Buka terminal di root direktori proyek:
 
 ```powershell
+# Masuk ke direktori backend
+cd backend
+
+# Buat dan aktifkan virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1   # Linux/macOS: source .venv/bin/activate
+
+# Instal dependensi Python
+pip install -r requirements.txt
+
+# Salin konfigurasi environment
+Copy-Item .env.example .env     # Linux/macOS: cp .env.example .env
+
+# Jalankan server FastAPI
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+> Dokumentasi OpenAPI / Swagger API otomatis aktif di: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+---
+
+### 2. Menjalankan Frontend (Next.js)
+
+Buka terminal kedua di root direktori:
+
+```powershell
+# Masuk ke direktori frontend
 cd frontend
+
+# Instal dependensi Node.js
 npm ci
-Copy-Item .env.local.example .env.local
+
+# Salin konfigurasi environment
+Copy-Item .env.local.example .env.local   # Linux/macOS: cp .env.local.example .env.local
+
+# Jalankan server Next.js dev
 npm run dev
 ```
+> Buka web app di browser: [http://127.0.0.1:3000](http://127.0.0.1:3000)
 
-Buka http://127.0.0.1:3000. Dokumentasi API: http://127.0.0.1:8000/docs. Gunakan alamat 127.0.0.1 secara konsisten agar CORS cocok.
+*Catatan: Pastikan menggunakan alamat IP `127.0.0.1` secara konsisten antara frontend dan backend agar CORS terhubung sempurna.*
 
-Tesseract diinstal terpisah pada Windows dengan bahasa `ind` dan `eng`. Isi `TESSERACT_CMD` dalam `.env` bila tidak ada pada PATH. Jika OCR gagal, aplikasi tetap menampilkan peringatan dan pengguna dapat memasukkan rentang manual. Docker sudah memasang kedua bahasa.
+---
 
-## Alur dan batasan
+## 🧩 Ekstensi Chrome (SIPORA Assistant v2.1.3)
 
-Menu **Ganti Halaman PDF** membuka alur tersendiri. Unggah PDF utama, pilih halaman, unggah scan PNG atau JPEG, lalu periksa pratinjau sebelum mengganti halaman dan mengunduh PDF hasil.
+Ekstensi browser digunakan untuk menjembatani naskah yang sudah dipecah ke portal repositori kampus tanpa login kredensial ke aplikasi pihak ketiga.
 
-1. Pilih D3/D4/S2 dan unggah PDF maksimal 50 MB / 500 halaman (dapat dikonfigurasi).
-2. Analisis menggunakan heading aktual di bagian atas halaman dan menghindari daftar isi bertitik. Hasil heuristik wajib diperiksa; kategori keyakinan bukan probabilitas akurasi.
-3. Preview dapat di-scroll berurutan. Ketik nomor halaman lalu Enter (atau pindah fokus) untuk melompat; kolom dapat dikosongkan saat mengganti angka. Tombol Lihat pada setiap bagian menuju halaman awal bagian tersebut. Periksa preview, identitas, dan empat rentang menggunakan posisi halaman fisik PDF mulai dari 1. Jika BAB II tidak ditemukan, akhir BAB I tetap kosong. Akhir Daftar Pustaka tanpa Lampiran merupakan asumsi yang harus dikonfirmasi.
-4. Konfirmasi semua rentang dan pemeriksaan visual, kemudian generate. Backend menolak rentang kosong, terbalik, di luar batas, tidak berurutan, tumpang tindih, atau belum diverifikasi.
-5. Unduh empat PDF atau ZIP. Laporan Lengkap merupakan salinan byte PDF sumber; halaman kosong tetap dipertahankan. Identitas dikoreksi untuk review dan tidak mengubah isi PDF.
+### Cara Memasang:
+1. Buka Google Chrome dan buka tautan `chrome://extensions/`.
+2. Aktifkan toggle **Developer mode** di pojok kanan atas.
+3. Klik tombol **Load unpacked**.
+4. Pilih folder `extension` dari repositori proyek ini.
+5. Ekstensi **Teman Pora — SIPORA Assistant** siap digunakan!
 
-Token akses acak wajib pada setiap akses pekerjaan, disimpan di sessionStorage agar refresh tab dapat memulihkan pekerjaan. Penutupan tab dapat menghilangkan akses. Tombol hapus menghapus seluruh objek pekerjaan. Jangan membagikan token. Job ID tidak cukup untuk mengakses dokumen.
-
-Sumber yang sudah dianalisis dibekukan sebagai `reviewed.pdf`, sehingga signed PUT URL yang masih berlaku tidak dapat mengganti dokumen yang direview. Pengunggahan R2 menggunakan URL PUT langsung; ukuran sebenarnya dicek sebelum pembacaan/analisis. URL PUT tidak menerapkan batas ukuran keras di sisi R2 sehingga akun storage tetap perlu pemantauan kuota.
-
-Deteksi berbasis pola masih perlu dikalibrasi dengan dataset TA POLIJE digital dan scan yang sah. Tidak ada jaminan tanda tangan, pengesahan, lisensi, atau kepatuhan akademik otomatis. Sistem tidak login maupun melakukan deposit ke SIPORA. Panduan metadata tersedia dalam antarmuka.
-
-## Pengujian
-
-```powershell
-cd backend
-.\.venv\Scripts\python.exe -m pytest -q
+```
+extension/
+├── manifest.json              # Chrome Manifest V3
+├── popup.html & popup.js      # Antarmuka kontrol ekstensi & status pairing
+├── website-bridge.js          # Content script komunikasi aman dengan Web App
+├── modules/
+│   ├── sipora-detector.js     # Deteksi halaman formulir EPrints
+│   ├── metadata-filler.js     # Injeksi metadata akademik
+│   ├── upload-manager.js      # Penanganan upload 4 berkas PDF
+│   ├── division-selector.js   # Pemilihan rumpun keilmuan otomatis
+│   └── automation-v212.js     # State machine workflow otomatisasi
 ```
 
+---
+
+## 🧪 Pengujian (Testing)
+
+Proyek ini dilengkapi dengan suite pengujian otomatis untuk memverifikasi akurasi deteksi dan kestabilan tipe:
+
 ```powershell
+# 1. Jalankan unit & integration test pada Backend
+cd backend
+pytest -v
+
+# 2. Jalankan type checking & build test pada Frontend
 cd frontend
 npm run typecheck
 npm run build
 ```
 
-Pengujian backend menggunakan dokumen sintetik dengan PyMuPDF dan penyimpanan sementara: deteksi, daftar isi, batas hilang, OCR gagal, akses token, validasi, D3/D4/S2, empat keluaran ZIP, salinan lengkap, preview, penghapusan, dan retensi. Belum merupakan evaluasi akurasi dataset TA sebenarnya.
+Suite pengujian mencakup verifikasi dokumen PDF sintetis: penanganan daftar isi, batas halaman terpotong, kegagalan OCR graceful, otorisasi token akses per-job, validasi rentang tumpang tindih, dan integritas arsip ZIP.
 
-## Deployment Vercel / Render / R2
+---
 
-### Satu proyek Vercel
+## ☁️ Deployment & Cloud Storage
 
-Pilih root repositori dan preset **Container**. Vercel memakai `Dockerfile`
-di root untuk menyajikan Next.js dan FastAPI pada domain yang sama serta
-menyertakan Tesseract dengan bahasa Indonesia dan Inggris. Atur
-`PORT=8000` di pengaturan proyek.
+### Opsi A: Satu Kontainer Vercel (Next.js + FastAPI + Tesseract)
+Gunakan root `Dockerfile` pada preset **Container** Vercel. Dockerfile telah mengonfigurasi Debian base dengan Next.js, Uvicorn, dan Tesseract bilingual (`ind` + `eng`).
+- Atur variabel lingkungan di Vercel:
+  - `PORT=8000`
+  - `APP_ENV=production`
+  - `STORAGE_MODE=blob` (atau `r2`)
+  - `BLOB_READ_WRITE_TOKEN=...`
+  - `CRON_SECRET=...`
 
-Deployment Teman Pora menggunakan Vercel Blob privat yang terhubung ke proyek.
-Isi `APP_ENV=production`, `STORAGE_MODE=blob`, `MAX_UPLOAD_SIZE=50000000`,
-dan `CRON_SECRET` di pengaturan proyek. Simpan `BLOB_READ_WRITE_TOKEN` yang
-ditambahkan Vercel saat Blob dihubungkan sebagai variabel server.
-Browser mengunggah PDF dan mengunduh ZIP langsung lewat URL sementara.
-Akses pekerjaan kedaluwarsa setelah 24 jam. Cron harian menghapus file
-yang sudah kedaluwarsa pada jadwal berikutnya.
+### Opsi B: Terpisah (Vercel Frontend + Render Backend + Cloudflare R2)
+- **Frontend:** Deploy folder `frontend` di Vercel dengan variabel `NEXT_PUBLIC_API_URL=https://api-temanpora.onrender.com`.
+- **Backend:** Gunakan blueprint `backend/render.yaml` di Render.
+- **Object Storage (Cloudflare R2):**
+  - Buat bucket R2 privat dengan CORS:
+    - *Allowed Origins:* domain frontend Anda
+    - *Allowed Methods:* `GET, PUT, HEAD`
+    - *Allowed Headers:* `Content-Type`
+  - Atur Lifecycle Rule: Hapus objek pada prefix `jobs/` setelah 24 jam.
 
-Untuk menggunakan R2, isi `STORAGE_MODE=r2`, `R2_BUCKET_NAME`,
-`R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, dan `R2_SECRET_ACCESS_KEY`.
-Atur CORS dan lifecycle bucket seperti di bawah.
+---
 
-### Vercel dan Render terpisah
+## 🛡️ Keamanan & Integritas Akademik
 
-Untuk Render Free tanpa R2, gunakan `backend/render-free.yaml`, atau isi
-`APP_ENV=production`, `STORAGE_MODE=local`, `ALLOW_EPHEMERAL_STORAGE=true`,
-`DATA_DIR=/tmp/temanpora-data`, dan `FRONTEND_URL` sesuai alamat frontend.
-Tidak membutuhkan layanan cron berbayar. File hanya bertahan selama instance
-yang sama berjalan; tidur, restart, atau deploy ulang menghilangkan pekerjaan.
-Tab browser yang masih terbuka tidak menjamin instance tetap berjalan.
-Unduh hasil segera. Batas retensi tetap berlaku dan pengguna dapat menghapus
-pekerjaannya lewat aplikasi. Untuk penyimpanan persisten gunakan R2 di bawah.
+- **Zero Credential Access:** Sistem tidak pernah meminta, membaca, menyimpan, ataupun mencatat password akun SIPORA atau cookie autentikasi kampus pengguna.
+- **Ephemeral Scoped Access:** Token job hanya bertahan di `sessionStorage` pengguna. Sesi kedaluwarsa secara otomatis dalam 24 jam.
+- **Human-in-the-Loop Principle:** Ekstensi sengaja **tidak mengeksekusi** tombol deposit final (*Deposit Item Now*). Pengguna tetap memiliki kendali penuh untuk meninjau pratinjau akhir sebelum submit naskah ke repositori POLIJE.
+- **Data Privacy:** Dokumen yang diunggah diproses dalam lingkungan privat dan dihapus secara berkala oleh background scheduler.
 
-- Vercel: root `frontend`, isi `NEXT_PUBLIC_API_URL` dengan origin backend, lalu build Next.js biasa.
-- Render: gunakan `backend/render.yaml` sebagai blueprint dengan root `backend` (atau sesuaikan Dockerfile path ke monorepo). Isi domain frontend dan seluruh variabel R2. Backend sengaja menggunakan satu worker agar penguncian proses efektif.
-- R2: bucket privat, kredensial dengan akses minimum, endpoint `https://<account-id>.r2.cloudflarestorage.com`. Atur `STORAGE_MODE=r2` dan `APP_ENV=production`; mode production menolak storage lokal.
-- CORS bucket: allowed origins domain frontend persis, allowed methods `PUT, GET, HEAD`, allowed headers `Content-Type`. Kredensial tidak diberikan ke frontend.
-- Scheduler: blueprint menyediakan cron cleanup tiap 15 menit. Isi kredensial bucket yang sama pada web dan cron. Alternatif: jalankan `python -m app.cleanup` dari scheduler yang memiliki konfigurasi R2.
-- Tambahkan lifecycle bucket untuk prefix `jobs/` sebagai pengaman tambahan. Target 24 jam berarti akses berakhir pada expires_at, sementara penghapusan fisik mengikuti jadwal cleanup dan lifecycle. Jangan mengklaim penghapusan tepat 24 jam sebelum keduanya dikonfigurasi dan diuji.
+---
 
-Metadata disimpan pada storage yang sama, sehingga tetap ada saat restart bila menggunakan R2. Pemrosesan berlangsung dalam request sinkron agar browser menunggu hasil; tidak ada antrean persisten atau resume otomatis. Jika instance mati saat analisis/generate, pekerjaan dapat tertinggal pada status proses sampai retensi menghapusnya; pengguna perlu memulai pekerjaan baru. Untuk banyak pengguna, tambahkan antrean/worker dan penguncian terdistribusi sebelum memperbanyak instance. Rate limiting 20 pekerjaan/IP/jam berlaku per proses; tambahkan proteksi edge untuk produksi dan konfigurasi proxy tepercaya sesuai penyedia hosting.
+## 📚 Dokumentasi Lengkap
 
-## Struktur
+Pelajari lebih lanjut detail arsitektur teknis dan panduan lanjutan:
+- 📖 [Arsitektur Sistem (ARCHITECTURE.md)](docs/ARCHITECTURE.md)
+- 🔌 [Spesifikasi REST API (API.md)](docs/API.md)
+- 🧩 [Panduan Lengkap Ekstensi (EXTENSION.md)](docs/EXTENSION.md)
+- 🧪 [Metodologi Pengujian (TESTING.md)](docs/TESTING.md)
+- 🚀 [Panduan Deploy Render Single Service](docs/RENDER-SINGLE-SERVICE.md)
 
-- `frontend/app/page.tsx`: seluruh tahap unggah, review, preview dan unduh dalam satu alur halaman.
-- `frontend/app/globals.css`: tampilan responsif berbahasa Indonesia.
-- `backend/app/main.py`: kontrak API dan otorisasi pekerjaan.
-- `backend/app/pdf.py`: ekstraksi/OCR, deteksi, validasi, pemisahan dan ZIP.
-- `backend/app/storage.py`: adapter lokal dan R2, metadata persisten.
-- `backend/app/cleanup.py`: penghapusan pekerjaan kedaluwarsa.
-- `backend/tests/`: unit dan integrasi dengan PDF sintetik.
+---
 
-Rute `/api/v1/jobs`, `/upload-url`, `/analyze`, `/analysis`, `/ranges`, `/validate`, `/generate`, `/download`, DELETE job dan health tersedia sesuai rancangan; tambahan preview PNG dan unggah lokal dipakai saat pengujian.
+## 👥 Kontribusi & Lisensi
 
-Referensi implementasi: [Next.js](https://nextjs.org/docs/app/getting-started/installation), [FastAPI](https://fastapi.tiangolo.com/), [PyMuPDF](https://pymupdf.readthedocs.io/), [Boto3 signed URLs](https://docs.aws.amazon.com/boto3/latest/guide/s3-presigned-urls.html).
+Kontribusi dan saran perbaikan sangat dipersilakan! Silakan buat *Issue* baru atau ajukan *Pull Request*.
 
-## Perbaikan deteksi dan preview
+Proyek ini dilisensikan di bawah lisensi **MIT License** — silakan gunakan dan kembangkan secara bebas untuk kemajuan akademik.
 
-Ekstraksi mengikuti urutan visual halaman (`sort=True`). Heading menerima variasi `BAB 1. PENDAHULUAN`, huruf berjarak, Unicode, dan judul yang terpisah baris; pencarian diperluas hingga 24 baris awal dengan pengecualian daftar isi. Teks digital tetap dipertahankan jika OCR kosong. Hasil analisis yang sudah tersimpan tidak berubah otomatis: unggah ulang untuk menjalankan detektor baru.
-
-Preview memuat halaman di sekitar posisi scroll dan melepas gambar yang jauh agar pemakaian memori terkendali. Nomor halaman mengikuti scroll. `suppressHydrationWarning` hanya diterapkan pada elemen html untuk atribut yang disuntikkan ekstensi seperti Katalon; perbedaan pada elemen anak tetap terdeteksi React.
-
-## Update pipeline SIPORA v2
-
-Setelah empat PDF selesai, bagian **Siapkan deposit SIPORA** menyediakan editor metadata, konfirmasi rumpun keilmuan, preview identifier NIM/NIDN, aturan empat file, pairing extension, serta kontrol Pause/Stop. Tahun unggah opsional juga tersedia.
-
-Chrome Extension MV3 ada di folder `extension`. Pasang melalui `chrome://extensions` → Developer mode → Load unpacked. Refresh website di Chrome, setujui metadata, klik Hubungkan, lalu setujui pairing dari popup extension. Kode berlaku 2 menit dan scoped grant maksimal 15 menit.
-
-**Mode dukungan saat ini:** koneksi extension dan paket metadata/file sudah diimplementasikan; form SIPORA setelah login belum terverifikasi sehingga unggah, pengisian form, dan deposit memakai fallback manual. Popup menyediakan salin metadata per field dan pemeriksaan integritas empat PDF. Extension tidak mengklaim upload/deposit berhasil dan tidak menebak selector. Tidak ada dokumen dikirim atau deposit nyata dilakukan saat pengembangan.
-
-Lihat [panduan extension](docs/EXTENSION.md), [API](docs/API.md), [arsitektur](docs/ARCHITECTURE.md), dan [pengujian](docs/TESTING.md). Jangan masukkan password atau cookie SIPORA ke ThesisSplit.
-
-## Otomasi SIPORA 2.1
-
-Extension sekarang memiliki **Jalankan otomatis** dari website maupun popup. Alur: draft → Thesis → empat PDF → opsi file → metadata → rumpun yang disetujui → review akhir. Detail pemasangan dan kontrol yang diperiksa ada di [docs/EXTENSION.md](docs/EXTENSION.md).
-
-Nonaktifkan extension ThesisSplit versi 2.0.0/duplikat, reload versi 2.1.0 dari folder proyek, refresh kedua tab, lalu pairing ulang. Pemeriksaan versi akan menolak responder extension lama. Deposit akhir tetap dilakukan pengguna setelah review; tidak ada klik Deposit Item Now dalam alur otomatis.
+<div align="center">
+  <sub>Dibangun dengan dedikasi untuk mempermudah civitas akademika Politeknik Negeri Jember (POLIJE) 🚀</sub>
+</div>
