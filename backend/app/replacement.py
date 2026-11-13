@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import hmac
+import io
 import json
 import logging
 import os
@@ -8,12 +9,13 @@ import re
 import secrets
 import time
 from threading import Lock
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Header, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel, Field
+from PIL import Image
 from starlette.concurrency import run_in_threadpool
 
 from . import config
@@ -134,6 +136,13 @@ def target_page(doc, target):
 
 
 def inspect_document(data):
+    info = analyze_source(data)
+    token = secrets.token_urlsafe(32)
+    identifier, expires = store("document", digest(token), {}, {"source.pdf": (data, "application/pdf")}, TEMP_TTL)
+    return success(document_id=identifier, access_token=token, expires_at=expires, **info)
+
+
+def analyze_source(data):
     with pdf_lock, open_source(data, MAX_PAGES) as doc:
         pages = [page_info(page) for page in doc]
         links, bookmarks, _ = navigation(doc)
@@ -142,9 +151,52 @@ def inspect_document(data):
             "bookmark_count": len(bookmarks),
             "internal_link_count": sum(is_internal(link) for group in links for link in group),
         }
+    return dict(total_pages=len(pages), pages=pages, navigation=nav, max_batch=MAX_BATCH)
+
+
+class UploadRequest(BaseModel):
+    content_type: Literal["application/pdf", "image/png", "image/jpeg"]
+    size: int = Field(gt=0)
+
+
+@router.post("/upload-url")
+def upload_url(body: UploadRequest):
+    limit = MAX_PDF if body.content_type == "application/pdf" else MAX_IMAGE
+    if body.size > limit:
+        raise ReplacementError("FILE_TOO_LARGE", f"Ukuran file maksimal {limit / 1024**2:.1f} MiB.", 413)
+    if not storage.cloud:
+        return success(upload_url=None)
     token = secrets.token_urlsafe(32)
-    identifier, expires = store("document", digest(token), {}, {"source.pdf": (data, "application/pdf")}, TEMP_TTL)
-    return success(document_id=identifier, access_token=token, expires_at=expires, total_pages=len(pages), pages=pages, navigation=nav, max_batch=MAX_BATCH)
+    kind = "document" if body.content_type == "application/pdf" else "scan-upload"
+    identifier, expires = store(kind, digest(token), {"size": body.size}, {}, TEMP_TTL)
+    name = "source.pdf" if kind == "document" else "scan"
+    url = storage.signed(f"{ROOT}{identifier}/{name}", "put_object",
+                         min(config.UPLOAD_TTL, TEMP_TTL), body.size, body.content_type)
+    return success(upload_url=url, upload_id=identifier, upload_token=token, expires_at=expires)
+
+
+def read_uploaded(prefix, name, expected_size, limit):
+    key = prefix + name
+    try:
+        size = storage.size(key)
+    except FileNotFoundError as exc:
+        raise ReplacementError("UPLOAD_INCOMPLETE", "Unggahan belum selesai.") from exc
+    if size != expected_size or size > limit:
+        raise ReplacementError("INVALID_UPLOAD_SIZE", "Ukuran berkas unggahan tidak sesuai.")
+    data = storage.get(key)
+    if len(data) != expected_size:
+        raise ReplacementError("INVALID_UPLOAD_SIZE", "Ukuran berkas unggahan tidak sesuai.")
+    return data
+
+
+@router.post("/uploads/{upload_id}/analyze")
+def analyze_uploaded(upload_id: str, authorization: str = Header("")):
+    prefix, record = load(upload_id, "document", authorization)
+    if "size" not in record:
+        raise ReplacementError("INVALID_UPLOAD", "Sesi unggahan tidak valid.")
+    data = read_uploaded(prefix, "source.pdf", record["size"], MAX_PDF)
+    return success(document_id=upload_id, access_token=authorization.partition(" ")[2],
+                   expires_at=record["expires_at"], **analyze_source(data))
 
 
 @router.post("/analyze")
@@ -183,10 +235,29 @@ async def preview(request: Request, document_id: str, target_page: int, authoriz
     return await run_in_threadpool(prepare_preview, document_id, target_page, authorization, await upload(request, MAX_IMAGE))
 
 
+class ScanUpload(BaseModel):
+    upload_id: str
+    upload_token: str
+    document_id: str
+    target_page: int
+
+
+@router.post("/uploaded-preview")
+def uploaded_preview(body: ScanUpload, authorization: str = Header("")):
+    load(body.document_id, "document", authorization)
+    prefix, record = load(body.upload_id, "scan-upload", "Bearer " + body.upload_token)
+    data = read_uploaded(prefix, "scan", record["size"], MAX_IMAGE)
+    return prepare_preview(body.document_id, body.target_page, authorization, data)
+
+
 @router.get("/previews/{preview_id}")
 def scan_preview(preview_id: str, authorization: str = Header("")):
     prefix, _ = load(preview_id, "preview", authorization)
-    return Response(storage.get(prefix + "scan.jpg"), media_type="image/jpeg")
+    with Image.open(io.BytesIO(storage.get(prefix + "scan.jpg"))) as image:
+        image.thumbnail((840, 840))
+        thumbnail = io.BytesIO()
+        image.save(thumbnail, "JPEG", quality=85)
+    return Response(thumbnail.getvalue(), media_type="image/jpeg")
 
 
 PreviewId = Annotated[str, Field(pattern=r"^[0-9a-f]{32}$")]
@@ -235,6 +306,13 @@ def status(replacement_id: str, authorization: str = Header("")):
 def result_preview(replacement_id: str, authorization: str = Header("")):
     prefix, _ = load(replacement_id, "result", authorization)
     return Response(storage.get(prefix + "preview.png"), media_type="image/png")
+
+
+@router.get("/{replacement_id}/download-url")
+def download_url(replacement_id: str, authorization: str = Header("")):
+    prefix, record = load(replacement_id, "result", authorization)
+    ttl = min(config.DOWNLOAD_TTL, max(1, record["expires_at"] - int(time.time())))
+    return success(url=storage.signed(prefix + "result.pdf", ttl=ttl) if storage.cloud else None)
 
 
 @router.get("/{replacement_id}/download")

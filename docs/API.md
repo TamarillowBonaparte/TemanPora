@@ -25,12 +25,16 @@ Prefix modul ini adalah `/api/replacement`. Nomor halaman dimulai dari 1. Respon
 | Endpoint | Request | Hasil |
 | --- | --- | --- |
 | `POST /analyze` | Body biner PDF | ID dokumen, token akses, waktu kedaluwarsa, daftar halaman dan ringkasan navigasi |
+| `POST /upload-url` | JSON `size` dan `content_type` | URL PUT privat sementara dan kredensial unggahan, atau URL kosong untuk penyimpanan lokal |
+| `POST /uploads/{upload_id}/analyze` | Bearer token unggahan | Analisis PDF yang telah diunggah langsung ke penyimpanan |
 | `GET /documents/{document_id}/pages/{target}` | Bearer token | Gambar PNG halaman sumber |
 | `POST /preview` | Bearer token, query `document_id` dan `target_page`, body biner PNG atau JPEG | ID pratinjau, dimensi scan, kecocokan proporsi dan jumlah tautan/bookmark terkait |
+| `POST /uploaded-preview` | Bearer token dokumen, JSON `upload_id`, `upload_token`, `document_id`, dan `target_page` | Pratinjau scan yang telah diunggah langsung ke penyimpanan |
 | `GET /previews/{preview_id}` | Bearer token | Gambar JPEG scan yang sudah dinormalisasi |
 | `POST /process` | Bearer token, JSON dengan `document_id` dan `preview_ids` (1–20 ID) atau `preview_id` tunggal | ID hasil, `target_pages`, jumlah halaman, status dan validasi navigasi |
 | `GET /{replacement_id}/status` | Bearer token | Status hasil dan waktu kedaluwarsa |
 | `GET /{replacement_id}/preview` | Bearer token | Gambar PNG halaman hasil |
 | `GET /{replacement_id}/download` | Bearer token | PDF hasil |
+| `GET /{replacement_id}/download-url` | Bearer token | URL unduh privat sementara, atau URL kosong untuk penyimpanan lokal |
 
 Analisis dan pratinjau menerima byte file langsung. Gunakan `Content-Type: application/pdf`, `image/png`, atau `image/jpeg` sesuai file. Token dikembalikan sekali saat analisis dan diperlukan untuk operasi berikutnya. Waktu kedaluwarsa diberikan dalam detik Unix. Pemrosesan sinkron memvalidasi navigasi sebelum menulis hasil ke penyimpanan privat.

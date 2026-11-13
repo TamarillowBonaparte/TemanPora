@@ -46,6 +46,21 @@ async function request(path: string, init?: RequestInit, token?: string) {
   return response;
 }
 
+async function uploadFile(file: File, contentType: string) {
+  const response = await request('/upload-url', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content_type: contentType, size: file.size }),
+  });
+  const { data } = await response.json();
+  if (!data.upload_url) return null;
+  const uploaded = await fetch(data.upload_url, {
+    method: 'PUT', headers: { 'Content-Type': contentType }, body: file,
+  }).catch(() => null);
+  if (uploaded?.status === 413) throw new Error('Berkas melebihi batas unggahan.');
+  if (!uploaded?.ok) throw new Error('Unggahan ke penyimpanan gagal. Coba lagi.');
+  return { upload_id: String(data.upload_id), upload_token: String(data.upload_token) };
+}
+
 function useProtectedImage(path?: string, token?: string) {
   const [image, setImage] = useState<{ path: string; url?: string; error?: string }>();
   useEffect(() => {
@@ -217,7 +232,10 @@ export default function ReplacementWorkflow() {
                   className="primary"
                   disabled={!file || !!busy}
                   onClick={() => file && perform('Menganalisis PDF…', async () => {
-                    const response = await request('/analyze', { method: 'POST', body: file });
+              const upload = await uploadFile(file, 'application/pdf');
+              const response = upload
+                ? await request(`/uploads/${upload.upload_id}/analyze`, { method: 'POST' }, upload.upload_token)
+                : await request('/analyze', { method: 'POST', body: file });
                     setDocument((await response.json()).data);
                     setTarget(1);
                     setQueue({});
@@ -324,7 +342,14 @@ export default function ReplacementWorkflow() {
 
                     <button className="primary" disabled={!scan || (!preview && queuedPages.length >= document.max_batch) || !!busy} onClick={() => scan && perform('Menyiapkan pratinjau…', async () => {
                       const query = new URLSearchParams({ document_id: document.document_id, target_page: String(target) });
-                      const response = await request('/preview?' + query, { method: 'POST', body: scan }, token);
+                const contentType = scan.type === 'image/png' || /\.png$/i.test(scan.name) ? 'image/png' : 'image/jpeg';
+                const upload = await uploadFile(scan, contentType);
+                const response = upload
+                  ? await request('/uploaded-preview', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...upload, document_id: document.document_id, target_page: target }),
+                  }, token)
+                  : await request('/preview?' + query, { method: 'POST', body: scan }, token);
                       const { data } = await response.json();
                       setQueue(current => ({ ...current, [target]: { ...data, filename: scan.name } }));
                       resetResult();
@@ -383,8 +408,6 @@ export default function ReplacementWorkflow() {
                 body: JSON.stringify({ document_id: document.document_id, preview_ids: queuedPages.map(number => queue[number].preview_id) }),
               }, token);
               const result: Result = (await response.json()).data;
-              const pdf = await request('/' + result.replacement_id + '/download', undefined, token);
-              setResultPdf(await pdf.blob());
               setResult(result);
             })}>Ganti {queuedPages.length} halaman sekaligus</button>
         </section>}
@@ -398,6 +421,26 @@ export default function ReplacementWorkflow() {
             {finalImage?.url ? <img src={finalImage.url} alt="Halaman pengganti pada PDF hasil" /> : <p>{finalImage?.error ?? 'Memuat hasil…'}</p>}
           </figure>
           <p>Halaman yang diganti {result.target_pages.join(', ')}.</p>
+          {!resultUrl && <button className="primary" disabled={!!busy} onClick={() => perform('Menyiapkan unduhan.', async () => {
+            const response = await request('/' + result.replacement_id + '/download-url', undefined, token);
+            const { data } = await response.json();
+            if (!data.url) {
+              const pdf = await request('/' + result.replacement_id + '/download', undefined, token);
+              const blob = await pdf.blob();
+              setResultPdf(blob);
+              const url = URL.createObjectURL(blob);
+              const link = window.document.createElement('a');
+              link.href = url;
+              link.download = (file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf';
+              link.click();
+              window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+              return;
+            }
+            const link = window.document.createElement('a');
+            link.href = data.url;
+            link.download = (file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf';
+            link.click();
+          })}>Unduh PDF hasil</button>}
           {resultUrl && <div className={styles.actions}>
             <a className="secondary" href={resultUrl} target="_blank" rel="noopener noreferrer">Buka PDF dan coba daftar isi</a>
             <a className="primary" href={resultUrl} download={(file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf'}>Unduh PDF hasil</a>

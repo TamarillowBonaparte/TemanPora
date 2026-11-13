@@ -10,6 +10,7 @@ from PIL import Image
 from app import config
 from app.main import app
 from app.replacement import cleanup_replacements
+from app.storage import storage
 from app.replacement_pdf import ReplacementError, navigation, normalize_scan, open_source, replace_page
 
 
@@ -160,3 +161,52 @@ def test_api_flow_access_and_retention(tmp_path, monkeypatch, source, scan):
     assert client.get(route + "/download", headers=headers).status_code == 410
     assert cleanup_replacements() == 5
     assert client.get(route + "/download", headers=headers).status_code == 404
+
+
+def test_cloud_transfers_use_signed_urls(monkeypatch, source, scan):
+    objects = {}
+    signed = []
+
+    def sign(key, method="get_object", ttl=300, size=None, content_type="application/pdf"):
+        signed.append((key, method, size, content_type))
+        return "https://storage.example/" + key
+
+    def get(key):
+        if key not in objects:
+            raise FileNotFoundError(key)
+        return objects[key]
+
+    monkeypatch.setattr(storage, "cloud", True)
+    monkeypatch.setattr(storage, "signed", sign)
+    monkeypatch.setattr(storage, "put", lambda key, data, media: objects.update({key: data}))
+    monkeypatch.setattr(storage, "get", get)
+    monkeypatch.setattr(storage, "size", lambda key: len(get(key)))
+    client = TestClient(app)
+    api = "/api/replacement"
+
+    def upload(content, content_type):
+        response = client.post(api + "/upload-url", json={"size": len(content), "content_type": content_type})
+        assert response.status_code == 200, response.text
+        data = response.json()["data"]
+        key, method, size, media = signed[-1]
+        assert (method, size, media) == ("put_object", len(content), content_type)
+        objects[key] = content
+        return {key: data[key] for key in ("upload_id", "upload_token")}
+
+    # A valid PDF padded past the Vercel payload limit never enters the API body.
+    trailer = source.rfind(b"startxref")
+    pdf_upload = upload(source[:trailer] + b"%" + b" " * 4_600_000 + b"\n" + source[trailer:], "application/pdf")
+    headers = {"Authorization": "Bearer " + pdf_upload["upload_token"]}
+    document_id = pdf_upload["upload_id"]
+    assert client.post(f"{api}/uploads/{document_id}/analyze", headers=headers).status_code == 200
+    scan_upload = upload(scan, "image/png")
+    preview = client.post(api + "/uploaded-preview", headers=headers, json={
+        **scan_upload, "document_id": document_id, "target_page": 2,
+    }).json()["data"]
+    result = client.post(api + "/process", headers=headers, json={
+        "document_id": document_id, "preview_ids": [preview["preview_id"]],
+    }).json()["data"]
+    path = f"{api}/{result['replacement_id']}/download-url"
+    assert client.get(path).status_code == 403
+    assert client.get(path, headers=headers).json()["data"]["url"].endswith("/result.pdf")
+    assert signed[-1][1] == "get_object"

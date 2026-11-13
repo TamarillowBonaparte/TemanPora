@@ -2,7 +2,7 @@ import { BlobNotFoundError, del, get, head, issueSignedToken, list, presignUrl, 
 import { buffer } from 'node:stream/consumers';
 import { pipeline } from 'node:stream/promises';
 
-const [action, pathname, argument, size] = process.argv.slice(2);
+const [action, pathname, argument, size, contentType = 'application/pdf'] = process.argv.slice(2);
 const access = 'private';
 
 async function run() {
@@ -38,7 +38,7 @@ async function run() {
       const operation = action === 'sign-put' ? 'put' : 'get';
       const validUntil = Date.now() + Number(argument) * 1000;
       const limits = operation === 'put'
-        ? { allowedContentTypes: ['application/pdf'], maximumSizeInBytes: Number(size) }
+        ? { allowedContentTypes: [contentType], maximumSizeInBytes: Number(size) }
         : {};
       const token = await issueSignedToken({ pathname, operations: [operation], validUntil, ...limits });
       const options = operation === 'put'

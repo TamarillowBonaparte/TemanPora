@@ -253,6 +253,8 @@ Gunakan root `Dockerfile` pada preset **Container** Vercel. Dockerfile telah men
   - `CRON_SECRET=...`
 
 ### Opsi B: Terpisah (Vercel Frontend + Render Backend + Cloudflare R2)
+
+Dengan `STORAGE_MODE=blob` atau `r2`, Ganti Halaman PDF mengirim PDF dan scan langsung ke penyimpanan privat, dan PDF hasil diunduh lewat URL sementara. Hubungkan Vercel Blob privat ke proyek untuk opsi kontainer Vercel. Untuk R2, izinkan `application/pdf`, `image/png`, dan `image/jpeg` pada unggahan dengan header `Content-Type`.
 - **Frontend:** Deploy folder `frontend` di Vercel dengan variabel `NEXT_PUBLIC_API_URL=https://api-temanpora.onrender.com`.
 - **Backend:** Gunakan blueprint `backend/render.yaml` di Render.
 - **Object Storage (Cloudflare R2):**
