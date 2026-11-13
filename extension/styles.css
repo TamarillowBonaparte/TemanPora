@@ -27,6 +27,12 @@ header .brand {
   gap: 10px;
 }
 
+header .brand img {
+  flex: none;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
 header strong {
   font-size: 18px;
   letter-spacing: -0.5px;

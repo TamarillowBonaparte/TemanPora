@@ -47,23 +47,24 @@ export function FileUpIcon({ size = 22, ...props }: IconProps) {
   );
 }
 
-export function UploadCloudIcon({ size = 26, ...props }: IconProps) {
+export function UploadCloudIcon({ size = 32, ...props }: IconProps) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden="true"
       {...props}
     >
-      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-      <path d="M12 12v9" />
-      <path d="m8 16 4-4 4 4" />
+      {/* Google Material Cloud Upload */}
+      <path
+        fill="currentColor"
+        d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+      />
+      <path
+        fill="#ffffff"
+        d="M14 13v4h-4v-4H7l5-5 5 5h-3z"
+      />
     </svg>
   );
 }
@@ -347,6 +348,27 @@ export function FileTextIcon({ size = 16, ...props }: IconProps) {
       <path d="M10 9H8" />
       <path d="M16 13H8" />
       <path d="M16 17H8" />
+    </svg>
+  );
+}
+
+export function ImageIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
     </svg>
   );
 }

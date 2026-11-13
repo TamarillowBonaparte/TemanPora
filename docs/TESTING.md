@@ -15,3 +15,9 @@ Pembaruan 2.1 menambahkan fixture DOM berdasarkan nama kontrol yang diperiksa pa
 
 Pembaruan metadata 4 November 2026: judul cover tanpa label Judul, nama di dekat NIM, pembimbing pada pengesahan/Abstract (as Supervisor/sebagai Dosen Pembimbing), tanggal ujian/pengesahan, dan keywords lintas baris dibaca otomatis. GET metadata mengisi kolom kosong pekerjaan lama sambil mempertahankan koreksi. NIP tidak dikonversi menjadi NIDN. Verifikasi browser lokal menunjukkan judul, nama mahasiswa dan pembimbing terisi tanpa mengetik ulang; email/NIDN yang tidak ada tetap kosong.
 
+## Uji Ganti Halaman PDF
+
+Jalankan `python -m pytest -q tests/test_replacement.py` dari folder backend. Fixture navigasi memuat tautan menuju halaman pengesahan dan bab lain, bookmark, named destination, tautan eksternal, serta halaman pengesahan yang dirotasi. Pengujian membandingkan tujuan tautan dan bookmark sebelum dan sesudah penggantian, memeriksa hilangnya teks lama, dan membandingkan render halaman lain piksel demi piksel.
+
+Untuk penerimaan manual, unduh hasil dari menu **Ganti Halaman PDF** menggunakan PDF yang memiliki daftar isi klik. Buka hasil di penampil PDF browser dan Adobe Acrobat Reader. Klik entri pengesahan, beberapa entri lain, dan bookmark pengesahan. Pastikan halaman pengesahan menampilkan scan dan setiap entri lain masih membuka halaman asalnya.
+

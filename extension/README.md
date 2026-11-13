@@ -3,7 +3,7 @@
 ## Memuat pembaruan
 
 1. Di `chrome://extensions`, nonaktifkan salinan ThesisSplit lama/duplikat versi 2.0.0.
-2. Untuk folder proyek yang sudah dimuat, klik Reload pada kartu **ThesisSplit SIPORA Assistant**. Jika versinya tetap 2.0.0, pilih **Load unpacked** dan pilih `D:\A Baru\Projek Coba Sipora\extension`. Pastikan versi **2.1.2**.
+2. Unduh ZIP dari [Teman Pora](https://temanpora.vercel.app/#extension), ekstrak, lalu pilih folder **Teman-Pora-Extension** melalui **Load unpacked**. Jika mengembangkan dari repo, pilih folder `extension` dan klik **Reload** setelah memperbarui kode. Pastikan versi **2.1.3**.
 3. Refresh halaman ThesisSplit dan SIPORA setelah Reload. Script pada tab lama tidak otomatis berganti hanya dengan reload extension.
 4. Centang persetujuan di website, lalu klik **Hubungkan & jalankan otomatis**. Persetujuan dari website langsung menyelesaikan pairing; tidak perlu popup berulang. Kode pairing 2 menit dan grant 15 menit tetap berlaku.
 

@@ -1,0 +1,7 @@
+{
+  "name": "temanpora-blob",
+  "private": true,
+  "dependencies": {
+    "@vercel/blob": "^2.4.0"
+  }
+}

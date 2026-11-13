@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import PdfPreview from '../components/PdfPreview';
 import DepositWorkflow from '../components/DepositWorkflow';
+import ReplacementWorkflow from './replace-pdf-page/ReplacementWorkflow';
 import {
-  LogoIcon,
   FileUpIcon,
   UploadCloudIcon,
   CheckIcon,
@@ -25,12 +25,35 @@ const API = (process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000') + '/api
 type Section = {start: number|null; end: number|null; verified: boolean; confidence: string; reason: string};
 type Analysis = {total_pages: number; identity:{name:string;nim:string}; sections:Record<string,Section>; warnings:string[];internal_links:number};
 type Job = {job_id:string;access_token:string;document_type:string;expires_at:string;files?:string[];status:string};
+type UploadLimits = {max_upload_size:number;max_pdf_pages:number};
 const keys = ['first_section','chapter_1','full_report','references'];
+
+function formatUploadLimit(bytes:number){
+ return new Intl.NumberFormat('id-ID', {maximumFractionDigits:2}).format(bytes/1_000_000)+' MB';
+}
 
 export default function Home(){
  const [stage,setStage]=useState('upload'); const [degree,setDegree]=useState('D4'); const [uploadYear,setUploadYear]=useState(''); const [file,setFile]=useState<File|null>(null);
  const [job,setJob]=useState<Job|null>(null); const [analysis,setAnalysis]=useState<Analysis|null>(null); const [busy,setBusy]=useState(false); const [message,setMessage]=useState(''); const [error,setError]=useState('');
  const [page,setPage]=useState(1); const [navigationKey,setNavigationKey]=useState(0); const [visual,setVisual]=useState(false); const [drag,setDrag]=useState(false); const input=useRef<HTMLInputElement>(null);
+ const [uploadLimits,setUploadLimits]=useState<UploadLimits|null>(null);
+ const [replaceMode,setReplaceMode]=useState(false);
+
+ useEffect(()=>{
+  const sync=()=>setReplaceMode(window.location.hash==='#ganti-halaman-pdf');
+  sync();
+  window.addEventListener('hashchange',sync);
+  return ()=>window.removeEventListener('hashchange',sync);
+ },[]);
+
+ useEffect(()=>{
+  const controller = new AbortController();
+  fetch(API+'/health',{cache:'no-store',signal:controller.signal})
+    .then(response=>response.ok?response.json():null)
+    .then(limits=>{if(limits)setUploadLimits(limits);})
+    .catch(()=>{});
+  return ()=>controller.abort();
+ },[]);
 
  useEffect(()=>{
   const saved = sessionStorage.getItem('temanpora-job') || sessionStorage.getItem('thesissplit-job');
@@ -76,7 +99,10 @@ export default function Home(){
   setError('');
   if(!f)return;
   if(!f.name.toLowerCase().endsWith('.pdf'))return setError('Pilih berkas PDF.');
-  if(f.size>50*1024*1024)return setError('Ukuran maksimal berkas 50 MB.');
+  if(uploadLimits && f.size>uploadLimits.max_upload_size){
+    setFile(null);
+    return setError('PDF melebihi batas unggah '+formatUploadLimit(uploadLimits.max_upload_size)+'.');
+  }
   setFile(f);
  }
 
@@ -86,6 +112,12 @@ export default function Home(){
   setError('');
   let j:Job|null=null;
   try{
+    setMessage('Memeriksa batas unggah…');
+    const limits:UploadLimits=await api('/health',{cache:'no-store'},null);
+    setUploadLimits(limits);
+    if(file.size>limits.max_upload_size){
+      throw new Error('PDF melebihi batas unggah '+formatUploadLimit(limits.max_upload_size)+'.');
+    }
     setMessage('Menyiapkan unggahan…');
     j=await api('/jobs',{method:'POST',body:JSON.stringify({document_type:degree,upload_year:uploadYear?Number(uploadYear):null})},null);
     setJob(j);
@@ -94,6 +126,7 @@ export default function Home(){
     setMessage('Mengunggah PDF…');
     const local=new URL(upload.url, window.location.origin).origin===new URL(API, window.location.origin).origin;
     const r=await fetch(upload.url,{method:'PUT',headers:{'Content-Type':'application/pdf',...(local?{Authorization:'Bearer '+j!.access_token}:{})},body:file});
+    if(r.status===413)throw new Error('PDF melebihi batas ukuran unggahan server.');
     if(!r.ok)throw new Error('Unggah gagal. Periksa koneksi dan coba lagi.');
     setMessage('Membaca struktur dokumen. OCR dapat memerlukan beberapa menit…');
     const result=await api('/jobs/'+j!.job_id+'/analyze',{method:'POST'},j);
@@ -210,6 +243,8 @@ export default function Home(){
       Teman <span>Pora</span>
     </a>
     <nav>
+      <a href="#ganti-halaman-pdf" onClick={()=>setReplaceMode(true)}>Ganti Halaman PDF</a>
+      <a className="extension-nav" href="#extension"><DownloadIcon size={15} /> Extension</a>
       <a href="#cara-kerja">Cara kerja</a>
       <a href="#panduan" style={{display:'inline-flex',alignItems:'center',gap:4}}>
         Panduan SIPORA <ExternalLinkIcon size={12} />
@@ -240,8 +275,22 @@ export default function Home(){
    <main>
     <div className="eyebrow"><span/> DARI SATU LAPORAN, SIAP UNTUK SIPORA</div>
     <h1>Tugas akhir selesai.<br/><span>Berkas unggah, beres.</span></h1>
-    <p className="intro">Pisahkan laporan tugas akhirmu menjadi empat PDF sesuai panduan<br className="desktop"/> SIPORA POLIJE. Periksa halamannya, lalu unduh dalam satu klik.</p>
+    <p className="intro">{replaceMode
+      ? 'Ganti halaman pengesahan dengan scan bertanda tangan dan pertahankan tautan daftar isi.'
+      : <>Pisahkan laporan tugas akhirmu menjadi empat PDF sesuai panduan<br className="desktop"/> SIPORA POLIJE. Periksa halamannya, lalu unduh dalam satu klik.</>}</p>
+    <div className="extension-actions">
+      <a className="extension-download" href="/teman-pora-extension.zip" download>
+        <DownloadIcon size={17} /> Unduh Extension
+      </a>
+      <a className="extension-install-link" href="#extension">Cara pasang <ArrowRightIcon size={15} /></a>
+    </div>
 
+    <div className="pdf-tool-switcher" aria-label="Alat PDF">
+      <a href="#pisah-pdf" aria-current={!replaceMode ? 'true' : undefined} onClick={()=>setReplaceMode(false)}>Pisah PDF</a>
+      <a href="#ganti-halaman-pdf" aria-current={replaceMode ? 'true' : undefined} onClick={()=>setReplaceMode(true)}>Ganti Halaman PDF</a>
+    </div>
+    <div hidden={!replaceMode}><ReplacementWorkflow /></div>
+    <div hidden={replaceMode} id="pisah-pdf">
     <div className="steps" aria-label="Tahapan">
       <span className={stage==='upload'?'active':'done'}>
         <b>{stage !== 'upload' ? <CheckIcon size={13} /> : '1'}</b> Unggah laporan
@@ -292,10 +341,12 @@ export default function Home(){
             onDragLeave={()=>setDrag(false)}
             onDrop={e=>{e.preventDefault();setDrag(false);choose(e.dataTransfer.files[0]);}}
           >
-            <span className="file-icon"><UploadCloudIcon size={26} /></span>
+            <span className={'file-icon '+(file?'file-selected':'')}>
+              {file ? <FileTextIcon size={26} /> : <UploadCloudIcon size={32} />}
+            </span>
             <strong>{file?file.name:'Tarik PDF ke sini, atau pilih berkas'}</strong>
-            <span>{file?(file.size/1024/1024).toFixed(2)+' MB · Klik untuk mengganti':'PDF hingga 50 MB · Maksimal 500 halaman'}</span>
-            <em>{file?'Ganti berkas':'Pilih berkas PDF'} <ExternalLinkIcon size={12} /></em>
+            <span>{file?formatUploadLimit(file.size)+' · Klik untuk mengganti':uploadLimits?'PDF hingga '+formatUploadLimit(uploadLimits.max_upload_size)+' · Maksimal '+uploadLimits.max_pdf_pages+' halaman':'Pilih berkas PDF'}</span>
+            <em>{file?'Ganti berkas':'Pilih berkas PDF'}</em>
           </button>
           <button className="primary" disabled={!file||busy} onClick={start}>
             Analisis dokumen <span><ArrowRightIcon size={18} /></span>
@@ -421,6 +472,7 @@ export default function Home(){
 
     {stage==='result'&&job&&<DepositWorkflow apiUrl={API} jobId={job.job_id} accessToken={job.access_token} degree={degree}/>}
 
+    </div>
     <section className="how" id="cara-kerja">
       <div>
         <span className="eyebrow">SEDERHANA DARI AWAL SAMPAI AKHIR</span>
@@ -439,6 +491,26 @@ export default function Home(){
           </article>
         ))}
       </div>
+    </section>
+
+    <section id="extension" className="extension-card" aria-labelledby="extension-title">
+      <div className="extension-heading">
+        <img src="/temanpora-icon.jpg" width="52" height="52" alt="" />
+        <div>
+          <h2 id="extension-title">Teman Pora Extension</h2>
+          <p>Pasang di Google Chrome untuk membantu menyiapkan deposit di SIPORA.</p>
+        </div>
+      </div>
+      <ol className="extension-steps">
+        <li>Unduh ZIP, lalu ekstrak hingga folder <strong>Teman-Pora-Extension</strong> terlihat.</li>
+        <li>Ketik <code>chrome://extensions</code> di bilah alamat Chrome, lalu aktifkan <strong>Developer mode</strong>.</li>
+        <li>Klik <strong>Load unpacked</strong> dan pilih folder <strong>Teman-Pora-Extension</strong> yang berisi <code>manifest.json</code>.</li>
+        <li>Muat ulang Teman Pora. Setelah PDF dan metadata siap, klik <strong>Hubungkan &amp; jalankan otomatis</strong>.</li>
+      </ol>
+      <p className="extension-pin">Untuk menampilkan ikonnya di toolbar Chrome, buka menu Extension (ikon puzzle), lalu sematkan Teman Pora.</p>
+      <a className="extension-download" href="/teman-pora-extension.zip" download>
+        <DownloadIcon size={17} /> Unduh Extension
+      </a>
     </section>
 
     <section id="panduan" className="guide">

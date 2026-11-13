@@ -29,6 +29,8 @@ Tesseract diinstal terpisah pada Windows dengan bahasa `ind` dan `eng`. Isi `TES
 
 ## Alur dan batasan
 
+Menu **Ganti Halaman PDF** membuka alur tersendiri. Unggah PDF utama, pilih halaman, unggah scan PNG atau JPEG, lalu periksa pratinjau sebelum mengganti halaman dan mengunduh PDF hasil.
+
 1. Pilih D3/D4/S2 dan unggah PDF maksimal 50 MB / 500 halaman (dapat dikonfigurasi).
 2. Analisis menggunakan heading aktual di bagian atas halaman dan menghindari daftar isi bertitik. Hasil heuristik wajib diperiksa; kategori keyakinan bukan probabilitas akurasi.
 3. Preview dapat di-scroll berurutan. Ketik nomor halaman lalu Enter (atau pindah fokus) untuk melompat; kolom dapat dikosongkan saat mengganti angka. Tombol Lihat pada setiap bagian menuju halaman awal bagian tersebut. Periksa preview, identitas, dan empat rentang menggunakan posisi halaman fisik PDF mulai dari 1. Jika BAB II tidak ditemukan, akhir BAB I tetap kosong. Akhir Daftar Pustaka tanpa Lampiran merupakan asumsi yang harus dikonfirmasi.
@@ -57,6 +59,27 @@ npm run build
 Pengujian backend menggunakan dokumen sintetik dengan PyMuPDF dan penyimpanan sementara: deteksi, daftar isi, batas hilang, OCR gagal, akses token, validasi, D3/D4/S2, empat keluaran ZIP, salinan lengkap, preview, penghapusan, dan retensi. Belum merupakan evaluasi akurasi dataset TA sebenarnya.
 
 ## Deployment Vercel / Render / R2
+
+### Satu proyek Vercel
+
+Pilih root repositori dan preset **Container**. Vercel memakai `Dockerfile`
+di root untuk menyajikan Next.js dan FastAPI pada domain yang sama serta
+menyertakan Tesseract dengan bahasa Indonesia dan Inggris. Atur
+`PORT=8000` di pengaturan proyek.
+
+Deployment Teman Pora menggunakan Vercel Blob privat yang terhubung ke proyek.
+Isi `APP_ENV=production`, `STORAGE_MODE=blob`, `MAX_UPLOAD_SIZE=50000000`,
+dan `CRON_SECRET` di pengaturan proyek. Simpan `BLOB_READ_WRITE_TOKEN` yang
+ditambahkan Vercel saat Blob dihubungkan sebagai variabel server.
+Browser mengunggah PDF dan mengunduh ZIP langsung lewat URL sementara.
+Akses pekerjaan kedaluwarsa setelah 24 jam. Cron harian menghapus file
+yang sudah kedaluwarsa pada jadwal berikutnya.
+
+Untuk menggunakan R2, isi `STORAGE_MODE=r2`, `R2_BUCKET_NAME`,
+`R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, dan `R2_SECRET_ACCESS_KEY`.
+Atur CORS dan lifecycle bucket seperti di bawah.
+
+### Vercel dan Render terpisah
 
 Untuk Render Free tanpa R2, gunakan `backend/render-free.yaml`, atau isi
 `APP_ENV=production`, `STORAGE_MODE=local`, `ALLOW_EPHEMERAL_STORAGE=true`,

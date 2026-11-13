@@ -1,0 +1,310 @@
+.workflow { scroll-margin-top: 110px; }
+.controls, .documentPreview { min-width: 0; }
+.documentPreview { position: sticky; top: 20px; }
+.documentPreview :global(.preview-scroll) { height: clamp(280px, 55vh, 520px); min-height: 0; }
+.documentPreview :global(.preview-page) > button { margin: 0 0 .5rem; }
+.documentPreview :global(.preview-page) > button[aria-pressed="true"] { background: var(--primary-light); border-color: var(--primary); color: var(--primary-hover); }
+.controls > .card { background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: clamp(1rem, 3vw, 1.75rem); margin: 1.25rem 0; }
+.controls > .card h2 { margin-top: 0; }
+.card fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; justify-items: start; gap: .8rem; }
+.card fieldset p { margin: 0; }
+.card label { display: grid; gap: .4rem; font-weight: 700; max-width: 100%; }
+.card input, .card select { max-width: 100%; padding: .45rem; border: 1px solid var(--line); border-radius: 6px; }
+.previews { display: grid; gap: .75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.card figure { margin: 0 0 1rem; min-width: 0; }
+.card figcaption { font-weight: 700; margin-bottom: .5rem; }
+.card img { display: block; width: min(100%, 360px); height: auto; object-fit: contain; background: white; border: 1px solid var(--line); }
+.error { color: #a21527; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.actions a { width: auto; margin: 0; }
+.queue { display: grid; gap: .5rem; padding: 0; list-style: none; }
+.queue li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .5rem; }
+.queue span { overflow-wrap: anywhere; }
+
+/* Dropzone PDF Utama */
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fbff;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 14px;
+  width: 100%;
+  min-height: 190px;
+  padding: 24px 18px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.dropzone:hover,
+.dropzone.drag {
+  border-color: #1a73e8;
+  background: #edf5fd;
+}
+
+.dropzone:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+.dropzoneIcon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  background: #e8f0fe;
+  border: 1.5px solid #d2e3fc;
+  border-radius: 50%;
+  color: #1a73e8;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.12);
+  margin-bottom: 4px;
+  transition: all .2s ease;
+}
+
+.dropzone:hover .dropzoneIcon,
+.dropzone.drag .dropzoneIcon {
+  background: #d2e3fc;
+  color: #174ea6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2);
+}
+
+.dropzoneIcon.fileSelected {
+  background: #fce8e6;
+  border-color: #fad2cf;
+  color: #d93025;
+  box-shadow: 0 2px 6px rgba(217, 48, 37, 0.15);
+}
+
+.dropzoneTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.dropzoneHint {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.dropzoneBtn {
+  font-style: normal;
+  background: white;
+  border: 1px solid var(--sky-border);
+  border-radius: 6px;
+  padding: 7px 15px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 4px;
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08);
+  transition: all .15s ease;
+}
+
+.dropzone:hover .dropzoneBtn {
+  border-color: #1a73e8;
+  color: #1a73e8;
+}
+
+/* Kartu Ringkasan Dokumen Aktif */
+.activeDocCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  background: #f8fbff;
+  border: 1px solid var(--sky-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.activeDocInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.activeDocIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #fce8e6;
+  color: #d93025;
+  flex-shrink: 0;
+}
+
+.activeDocInfo strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.activeDocInfo span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Dropzone Gambar Scan */
+.scanSection {
+  width: 100%;
+  margin: 6px 0 2px;
+}
+
+.scanLabel {
+  display: block;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.scanDropzone {
+  display: block;
+  width: 100%;
+  background: #f8fbff;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all .2s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.scanDropzone:hover,
+.scanDropzone.drag {
+  border-color: #1a73e8;
+  background: #edf5fd;
+}
+
+.scanDropzone:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+.scanEmptyBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 8px 4px;
+}
+
+.scanIconBadge {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  background: #e8f0fe;
+  border: 1px solid #d2e3fc;
+  border-radius: 50%;
+  color: #1a73e8;
+  box-shadow: 0 2px 4px rgba(26, 115, 232, 0.1);
+  margin-bottom: 2px;
+  transition: all .2s ease;
+}
+
+.scanDropzone:hover .scanIconBadge,
+.scanDropzone.drag .scanIconBadge {
+  background: #d2e3fc;
+  color: #174ea6;
+  transform: translateY(-2px);
+}
+
+.scanEmptyBox strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.scanEmptyBox span:not(.scanBrowseBtn) {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.scanBrowseBtn {
+  font-style: normal;
+  background: white;
+  border: 1px solid var(--sky-border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-top: 4px;
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.08);
+}
+
+.scanPreviewBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px;
+}
+
+.scanThumb {
+  width: 58px;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  background: white;
+}
+
+.scanMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.scanMeta strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.scanMeta span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.scanReplaceBtn {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a73e8;
+  margin-top: 2px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .documentPreview { position: static; }
+}

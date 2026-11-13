@@ -4,17 +4,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { EyeIcon, ChevronLeftIcon, ChevronRightIcon, RotateCwIcon } from './Icons';
 
 type Props = {
-  apiUrl: string;
-  jobId: string;
   token: string;
   totalPages: number;
   targetPage: number;
-  navigationKey: number;
-};
+  navigationKey?: number;
+  onSelectPage?: (page: number) => void;
+  selectionDisabled?: boolean;
+} & ({ apiUrl: string; jobId: string; pageUrl?: never } | { pageUrl: (page: number) => string });
 
-function PreviewPage({ page, apiUrl, jobId, token, viewport }: {
-  page: number; apiUrl: string; jobId: string; token: string;
+function PreviewPage({ page, url: pageUrl, token, viewport, selected, onSelect, selectionDisabled }: {
+  page: number; url: string; token: string;
   viewport: React.RefObject<HTMLDivElement | null>;
+  selected?: boolean;
+  onSelect?: (page: number) => void;
+  selectionDisabled?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const [nearby, setNearby] = useState(false);
@@ -36,7 +39,7 @@ function PreviewPage({ page, apiUrl, jobId, token, viewport }: {
     let active = true;
     let objectUrl = '';
     setError('');
-    fetch(`${apiUrl}/jobs/${jobId}/preview/${page}`, {
+    fetch(pageUrl, {
       headers: { Authorization: `Bearer ${token}` }, signal: controller.signal,
     }).then(async response => {
       if (!response.ok) throw new Error('Halaman tidak dapat dimuat.');
@@ -54,11 +57,15 @@ function PreviewPage({ page, apiUrl, jobId, token, viewport }: {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       setUrl('');
     };
-  }, [nearby, apiUrl, jobId, token, page, attempt]);
+  }, [nearby, pageUrl, token, attempt]);
 
   return (
     <div ref={container} className="preview-page" data-page={page}>
       <div className="preview-page-label">Halaman PDF {page}</div>
+      {onSelect && <button className="secondary" aria-pressed={selected} disabled={selectionDisabled}
+        onClick={() => onSelect(page)}>
+        {selected ? 'Halaman dipilih' : `Pilih halaman ${page}`}
+      </button>}
       <div className="preview-sheet">
         {url ? <img src={url} alt={`Preview halaman PDF ${page}`} /> :
           <div className="preview-placeholder" role={error ? 'alert' : undefined}>
@@ -76,7 +83,9 @@ function PreviewPage({ page, apiUrl, jobId, token, viewport }: {
   );
 }
 
-export default function PdfPreview({ apiUrl, jobId, token, totalPages, targetPage, navigationKey }: Props) {
+export default function PdfPreview(props: Props) {
+  const { token, totalPages, targetPage, navigationKey, onSelectPage, selectionDisabled } = props;
+  const pageUrl = props.pageUrl ?? ((page: number) => `${props.apiUrl}/jobs/${props.jobId}/preview/${page}`);
   const viewport = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(1);
   const [draft, setDraft] = useState('1');
@@ -146,7 +155,8 @@ export default function PdfPreview({ apiUrl, jobId, token, totalPages, targetPag
       </div>
       <div ref={viewport} className="preview-scroll" onScroll={trackPage} tabIndex={0} role="region" aria-label="Halaman PDF, gulir untuk membaca dokumen">
         {Array.from({ length: totalPages }, (_, index) => (
-          <PreviewPage key={index + 1} page={index + 1} apiUrl={apiUrl} jobId={jobId} token={token} viewport={viewport} />
+          <PreviewPage key={index + 1} page={index + 1} url={pageUrl(index + 1)} token={token} viewport={viewport}
+            selected={index + 1 === targetPage} onSelect={onSelectPage} selectionDisabled={selectionDisabled} />
         ))}
       </div>
       <p className="preview-note">Ketik nomor lalu Enter untuk melompat. Nomor mengikuti urutan halaman PDF.</p>

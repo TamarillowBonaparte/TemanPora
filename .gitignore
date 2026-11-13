@@ -10,3 +10,7 @@ __pycache__/
 .env
 .env.local
 backend/data/
+.vercel/
+frontend/public/teman-pora-extension.zip
+.vercel
+.env*

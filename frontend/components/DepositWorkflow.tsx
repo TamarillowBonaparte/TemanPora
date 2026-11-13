@@ -226,16 +226,7 @@ export default function DepositWorkflow({apiUrl,jobId,accessToken,degree}:Props)
         {status.domain&&<p>Domain target: <strong>{status.domain}</strong></p>}
       </div>
 
-      <details className="install-guide">
-        <summary>Cara memasang Teman Pora Extension</summary>
-        <ol>
-          <li>Buka chrome://extensions di Google Chrome dan aktifkan Developer mode.</li>
-          <li>Klik Load unpacked, lalu pilih folder <strong>extension</strong> dalam proyek ini.</li>
-          <li>Refresh Teman Pora di Chrome. Buka SIPORA dan login sendiri.</li>
-          <li>Centang persetujuan koneksi, lalu klik Hubungkan & jalankan otomatis.</li>
-        </ol>
-        <p>Konfigurasi bawaan untuk website http://127.0.0.1:3000 atau http://localhost:3000 dan backend port 8000. Domain produksi harus dikonfigurasi secara eksplisit.</p>
-      </details>
+      <a className="sipora-link" href="#extension">Unduh dan lihat cara memasang extension</a>
 
       <h3>Empat berkas dan opsi unggah</h3>
       <div className="file-rules">

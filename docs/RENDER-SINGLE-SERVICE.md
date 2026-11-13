@@ -35,3 +35,18 @@ persisten, gunakan storage R2 yang didukung proyek.
 
 Extension harus dikonfigurasi untuk mengizinkan domain Render sebagai website
 dan API. Lihat docs/EXTENSION.md.
+
+## Ganti Halaman PDF
+
+Setelah build, buka `/#ganti-halaman-pdf` dan uji analisis, pratinjau, dan unduhan. Pada deployment satu layanan, API tersedia di `/api/replacement` pada origin yang sama. Saat menjalankan Next.js terpisah, browser mengakses backend yang ditentukan oleh `NEXT_PUBLIC_API_URL` dan backend harus mengizinkan origin frontend lewat `FRONTEND_URL`. Mulai ulang frontend dan backend setelah memperbarui kode lokal.
+
+| Environment | Default |
+| --- | --- |
+| `REPLACEMENT_MAX_PDF_SIZE_MB` | 50, dibatasi juga oleh `MAX_UPLOAD_SIZE` |
+| `REPLACEMENT_MAX_IMAGE_SIZE_MB` | 15 |
+| `REPLACEMENT_MAX_PAGES` | 300, dibatasi juga oleh `MAX_PDF_PAGES` |
+| `REPLACEMENT_TEMP_TTL_MINUTES` | 60 |
+| `REPLACEMENT_OUTPUT_TTL_HOURS` | 24 |
+| `REPLACEMENT_DPI` | 200 |
+
+Jalankan `python -m app.cleanup` secara terjadwal dari lingkungan backend atau gunakan endpoint cleanup yang sudah ada dengan `CRON_SECRET`. Akses ditolak segera setelah kedaluwarsa dan berkas dihapus pada siklus cleanup berikutnya.

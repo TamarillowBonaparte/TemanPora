@@ -16,16 +16,19 @@ from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from . import config as c
+from .cleanup import cleanup
 from .storage import storage
 from .pdf import analyze, open_pdf, validate, generate
 from .metadata import DepositMetadata, metadata_errors, mapped_metadata, output_manifest, extract_metadata
+from .replacement import router as replacement_router
 
 app = FastAPI(title="Teman Pora", version="2.0.0")
+app.include_router(replacement_router)
 app.add_middleware(CORSMiddleware, allow_origins=[c.FRONTEND_URL], allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"], allow_headers=["Authorization", "Content-Type"])
 @app.middleware('http')
 async def private_responses(request: Request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith('/api/v1/jobs') or request.url.path.startswith('/api/v1/extension'):
+    if request.url.path.startswith(('/api/v1/jobs', '/api/v1/extension', '/api/replacement')):
         response.headers['Cache-Control'] = 'no-store'
     return response
 
@@ -95,6 +98,13 @@ async def internal_error(request, exc):
 def health():
     return {"status": "ok", "storage": c.STORAGE_MODE, "max_upload_size": c.MAX_UPLOAD_SIZE, "max_pdf_pages": c.MAX_PDF_PAGES, "retention_hours": c.JOB_TTL_HOURS}
 
+@app.get(P + "/internal/cleanup")
+def cleanup_expired(authorization: str = Header(default="")):
+    secret = os.getenv("CRON_SECRET")
+    if not secret or not hmac.compare_digest(authorization.encode(), f"Bearer {secret}".encode()):
+        raise HTTPException(401)
+    return {"deleted": cleanup()}
+
 @app.post(P + "/jobs", status_code=201)
 def create(body: CreateJob, request: Request):
     ip = request.client.host if request.client else "unknown"
@@ -129,7 +139,7 @@ def upload_url(body: UploadRequest, request: Request, job=Depends(authorized)):
         ticket = secrets.token_urlsafe(32)
         job.update(upload_hash=hashlib.sha256(ticket.encode()).hexdigest(), upload_expires=(now()+timedelta(seconds=c.UPLOAD_TTL)).isoformat())
         storage.save_job(job)
-        url = storage.signed(key(job), 'put_object', c.UPLOAD_TTL) if storage.cloud else str(request.base_url).rstrip('/') + P + f"/jobs/{job['job_id']}/source?ticket={ticket}"
+        url = storage.signed(key(job), 'put_object', c.UPLOAD_TTL, size=body.size) if storage.cloud else str(request.base_url).rstrip('/') + P + f"/jobs/{job['job_id']}/source?ticket={ticket}"
         return {"url": url, "method": "PUT", "expires_in": c.UPLOAD_TTL}
 
 @app.put(P + "/jobs/{job_id}/source")
