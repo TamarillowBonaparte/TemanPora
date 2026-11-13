@@ -104,6 +104,7 @@ export default function ReplacementWorkflow() {
   const finalImage = useProtectedImage(result && '/' + result.replacement_id + '/preview', token);
   const [resultUrl, setResultUrl] = useState<string>();
 
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const [pdfDrag, setPdfDrag] = useState(false);
@@ -129,6 +130,10 @@ export default function ReplacementWorkflow() {
     setResultUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [resultPdf]);
+
+  useEffect(() => {
+    if (result) resultHeadingRef.current?.focus();
+  }, [result]);
 
   function handlePdfSelect(selected?: File) {
     if (!selected) return;
@@ -413,14 +418,8 @@ export default function ReplacementWorkflow() {
         </section>}
         <div role="status">{busy && <p>{busy}</p>}</div>
         {error && <p role="alert" className={styles.error}>{error}</p>}
-        {result && <section className={styles.card}>
-          <h2>PDF hasil penggantian</h2>
-          <p>Navigasi lulus validasi · {result.total_pages_before} halaman sebelum, {result.total_pages_after} halaman sesudah.</p>
-          <figure>
-            <figcaption>Halaman {result.target_page} pada PDF hasil</figcaption>
-            {finalImage?.url ? <img src={finalImage.url} alt="Halaman pengganti pada PDF hasil" /> : <p>{finalImage?.error ?? 'Memuat hasil…'}</p>}
-          </figure>
-          <p>Halaman yang diganti {result.target_pages.join(', ')}.</p>
+        {result && <section className={styles.card} aria-labelledby="replacement-result">
+          <h2 id="replacement-result" ref={resultHeadingRef} tabIndex={-1}>PDF hasil penggantian</h2>
           {!resultUrl && <div className={styles.actions}>
             <button className="secondary" disabled={!!busy} onClick={() => {
               const viewer = window.open('about:blank', '_blank');
@@ -450,7 +449,7 @@ export default function ReplacementWorkflow() {
                   throw error;
                 }
               });
-            }}>Pratinjau PDF lengkap</button>
+            }}>Lihat PDF</button>
             <button className="primary" disabled={!!busy} onClick={() => perform('Menyiapkan unduhan.', async () => {
               const response = await request('/' + result.replacement_id + '/download-url', undefined, token);
               const { data } = await response.json();
@@ -470,12 +469,18 @@ export default function ReplacementWorkflow() {
               link.href = data.url;
               link.download = (file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf';
               link.click();
-            })}>Unduh PDF hasil</button>
+            })}>Unduh PDF</button>
           </div>}
           {resultUrl && <div className={styles.actions}>
-            <a className="secondary" href={resultUrl} target="_blank" rel="noopener noreferrer">Pratinjau PDF lengkap</a>
-            <a className="primary" href={resultUrl} download={(file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf'}>Unduh PDF hasil</a>
+            <a className="secondary" href={resultUrl} target="_blank" rel="noopener noreferrer">Lihat PDF</a>
+            <a className="primary" href={resultUrl} download={(file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf'}>Unduh PDF</a>
           </div>}
+          <p>Navigasi lulus validasi · {result.total_pages_before} halaman sebelum, {result.total_pages_after} halaman sesudah.</p>
+          <figure>
+            <figcaption>Halaman {result.target_page} pada PDF hasil</figcaption>
+            {finalImage?.url ? <img src={finalImage.url} alt="Halaman pengganti pada PDF hasil" /> : <p>{finalImage?.error ?? 'Memuat hasil…'}</p>}
+          </figure>
+          <p>Halaman yang diganti {result.target_pages.join(', ')}.</p>
         </section>}
         </div>
         {document && <section className={styles.documentPreview} aria-label="Pratinjau PDF utama">
