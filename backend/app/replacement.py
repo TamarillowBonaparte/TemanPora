@@ -309,10 +309,10 @@ def result_preview(replacement_id: str, authorization: str = Header("")):
 
 
 @router.get("/{replacement_id}/download-url")
-def download_url(replacement_id: str, authorization: str = Header("")):
+def download_url(replacement_id: str, inline: bool = False, authorization: str = Header("")):
     prefix, record = load(replacement_id, "result", authorization)
     ttl = min(config.DOWNLOAD_TTL, max(1, record["expires_at"] - int(time.time())))
-    return success(url=storage.signed(prefix + "result.pdf", ttl=ttl) if storage.cloud else None)
+    return success(url=storage.signed(prefix + "result.pdf", ttl=ttl, inline=inline) if storage.cloud else None)
 
 
 @router.get("/{replacement_id}/download")

@@ -167,8 +167,8 @@ def test_cloud_transfers_use_signed_urls(monkeypatch, source, scan):
     objects = {}
     signed = []
 
-    def sign(key, method="get_object", ttl=300, size=None, content_type="application/pdf"):
-        signed.append((key, method, size, content_type))
+    def sign(key, method="get_object", ttl=300, size=None, content_type="application/pdf", inline=False):
+        signed.append((key, method, size, content_type, inline))
         return "https://storage.example/" + key
 
     def get(key):
@@ -188,7 +188,7 @@ def test_cloud_transfers_use_signed_urls(monkeypatch, source, scan):
         response = client.post(api + "/upload-url", json={"size": len(content), "content_type": content_type})
         assert response.status_code == 200, response.text
         data = response.json()["data"]
-        key, method, size, media = signed[-1]
+        key, method, size, media, _ = signed[-1]
         assert (method, size, media) == ("put_object", len(content), content_type)
         objects[key] = content
         return {key: data[key] for key in ("upload_id", "upload_token")}
@@ -210,3 +210,6 @@ def test_cloud_transfers_use_signed_urls(monkeypatch, source, scan):
     assert client.get(path).status_code == 403
     assert client.get(path, headers=headers).json()["data"]["url"].endswith("/result.pdf")
     assert signed[-1][1] == "get_object"
+    assert signed[-1][-1] is False
+    assert client.get(path + "?inline=true", headers=headers).json()["data"]["url"].endswith("/result.pdf")
+    assert signed[-1][-1] is True

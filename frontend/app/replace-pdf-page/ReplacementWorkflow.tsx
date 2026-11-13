@@ -414,35 +414,66 @@ export default function ReplacementWorkflow() {
         <div role="status">{busy && <p>{busy}</p>}</div>
         {error && <p role="alert" className={styles.error}>{error}</p>}
         {result && <section className={styles.card}>
-          <h2>PDF siap diunduh</h2>
+          <h2>PDF hasil penggantian</h2>
           <p>Navigasi lulus validasi · {result.total_pages_before} halaman sebelum, {result.total_pages_after} halaman sesudah.</p>
           <figure>
             <figcaption>Halaman {result.target_page} pada PDF hasil</figcaption>
             {finalImage?.url ? <img src={finalImage.url} alt="Halaman pengganti pada PDF hasil" /> : <p>{finalImage?.error ?? 'Memuat hasil…'}</p>}
           </figure>
           <p>Halaman yang diganti {result.target_pages.join(', ')}.</p>
-          {!resultUrl && <button className="primary" disabled={!!busy} onClick={() => perform('Menyiapkan unduhan.', async () => {
-            const response = await request('/' + result.replacement_id + '/download-url', undefined, token);
-            const { data } = await response.json();
-            if (!data.url) {
-              const pdf = await request('/' + result.replacement_id + '/download', undefined, token);
-              const blob = await pdf.blob();
-              setResultPdf(blob);
-              const url = URL.createObjectURL(blob);
+          {!resultUrl && <div className={styles.actions}>
+            <button className="secondary" disabled={!!busy} onClick={() => {
+              const viewer = window.open('about:blank', '_blank');
+              if (!viewer) {
+                setError('Izinkan tab baru untuk membuka pratinjau PDF.');
+                return;
+              }
+              viewer.opener = null;
+              viewer.document.title = 'Menyiapkan pratinjau PDF';
+              viewer.document.body.textContent = 'Menyiapkan pratinjau PDF…';
+              void perform('Menyiapkan pratinjau PDF.', async () => {
+                try {
+                  const response = await request('/' + result.replacement_id + '/download-url?inline=true', undefined, token);
+                  const { data } = await response.json();
+                  if (data.url) {
+                    viewer.location.replace(data.url);
+                  } else {
+                    const pdf = await request('/' + result.replacement_id + '/download', undefined, token);
+                    const blob = await pdf.blob();
+                    setResultPdf(blob);
+                    const url = URL.createObjectURL(blob);
+                    viewer.location.replace(url);
+                    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+                  }
+                } catch (error) {
+                  viewer.close();
+                  throw error;
+                }
+              });
+            }}>Pratinjau PDF lengkap</button>
+            <button className="primary" disabled={!!busy} onClick={() => perform('Menyiapkan unduhan.', async () => {
+              const response = await request('/' + result.replacement_id + '/download-url', undefined, token);
+              const { data } = await response.json();
+              if (!data.url) {
+                const pdf = await request('/' + result.replacement_id + '/download', undefined, token);
+                const blob = await pdf.blob();
+                setResultPdf(blob);
+                const url = URL.createObjectURL(blob);
+                const link = window.document.createElement('a');
+                link.href = url;
+                link.download = (file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf';
+                link.click();
+                window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+                return;
+              }
               const link = window.document.createElement('a');
-              link.href = url;
+              link.href = data.url;
               link.download = (file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf';
               link.click();
-              window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
-              return;
-            }
-            const link = window.document.createElement('a');
-            link.href = data.url;
-            link.download = (file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf';
-            link.click();
-          })}>Unduh PDF hasil</button>}
+            })}>Unduh PDF hasil</button>
+          </div>}
           {resultUrl && <div className={styles.actions}>
-            <a className="secondary" href={resultUrl} target="_blank" rel="noopener noreferrer">Buka PDF dan coba daftar isi</a>
+            <a className="secondary" href={resultUrl} target="_blank" rel="noopener noreferrer">Pratinjau PDF lengkap</a>
             <a className="primary" href={resultUrl} download={(file?.name.replace(/\.pdf$/i, '') || 'dokumen') + '-halaman-diganti.pdf'}>Unduh PDF hasil</a>
           </div>}
         </section>}

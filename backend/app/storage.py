@@ -101,14 +101,17 @@ class Storage:
             else:
                 self.path(key).unlink(missing_ok=True)
 
-    def signed(self, key, method='get_object', ttl=300, size=None, content_type='application/pdf'):
+    def signed(self, key, method='get_object', ttl=300, size=None, content_type='application/pdf', inline=False):
         if self.blob:
             if method == 'put_object':
                 return self._blob('sign-put', key, ttl, size or c.MAX_UPLOAD_SIZE, content_type).decode().strip()
-            return self._blob('sign-get', key, ttl).decode().strip()
+            return self._blob('sign-view' if inline else 'sign-get', key, ttl).decode().strip()
         params = {'Bucket': self.bucket, 'Key': key}
         if method == 'put_object':
             params['ContentType'] = content_type
+        elif inline:
+            params['ResponseContentDisposition'] = 'inline'
+            params['ResponseContentType'] = 'application/pdf'
         return self.client.generate_presigned_url(method, Params=params, ExpiresIn=ttl)
 
 storage = Storage()

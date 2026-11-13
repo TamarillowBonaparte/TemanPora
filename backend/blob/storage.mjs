@@ -34,6 +34,7 @@ async function run() {
       await del(JSON.parse(await buffer(process.stdin)));
       break;
     case 'sign-put':
+    case 'sign-view':
     case 'sign-get': {
       const operation = action === 'sign-put' ? 'put' : 'get';
       const validUntil = Date.now() + Number(argument) * 1000;
@@ -45,7 +46,7 @@ async function run() {
         ? { ...limits, addRandomSuffix: false, allowOverwrite: false, cacheControlMaxAge: 60 }
         : { useCache: false };
       const { presignedUrl } = await presignUrl(token, { pathname, operation, access, validUntil, ...options });
-      if (operation === 'get') {
+      if (action === 'sign-get') {
         const url = new URL(presignedUrl);
         url.searchParams.set('download', '1');
         console.log(url.href);
